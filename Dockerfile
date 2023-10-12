@@ -1,19 +1,25 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
+ARG APT_MIRROR_HOST=mirrors.tuna.tsinghua.edu.cn
+ENV DEBIAN_FRONTEND noninteractive
 
-EXPOSE 9222
+# modify apt source list
+RUN sed -i "s/archive.ubuntu.com/${APT_MIRROR_HOST}/g" /etc/apt/sources.list \
+    && sed -i "s/security.ubuntu.com/${APT_MIRROR_HOST}/g" /etc/apt/sources.list
 
-RUN apt-get update -qqy \
-  && apt-get -qqy install libnss3 libnss3-tools libfontconfig1 wget ca-certificates apt-transport-https inotify-tools \
-  gnupg \
-  && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+# update source
+RUN apt update
 
-ENV CHROME_VERSION=92.0.4515.131
+# install base tools
+RUN apt install -y wget fonts-wqy-microhei
 
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-  && echo "deb https://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-  && apt-get update -qqy \
-  && apt-get -qqy install google-chrome-stable=${CHROME_VERSION}-1
+# download and install latest chrome
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+RUN dpkg -i google-chrome-stable_current_amd64.deb;exit 0
+RUN apt install -f -y
+
+# config timezone
+RUN ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 RUN google-chrome-stable --version
 
